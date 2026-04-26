@@ -246,7 +246,8 @@ def create_flight_agent(destination: str, trip_dates: str):
                   "airline schedules, pricing patterns, and travel routes. You excel at "
                   "finding the best flight options that balance cost and convenience. "
                   "You have booked thousands of flights and know the best times to fly. "
-                  "You always research current prices and use real booking site data.",
+                  "You always research current prices and use real booking site data."
+                  "You always prioritize the cheapest flights over comfort or convenience.",
         tools=[search_flight_prices],
         verbose=True,
         allow_delegation=False
@@ -297,6 +298,15 @@ def create_itinerary_agent(destination: str, trip_duration: str):
         allow_delegation=False
     )
 
+def create_local_agent(destination: str):
+    """Create the Local Expert agent."""
+    return Agent(
+        role="Local Expert",
+        goal=f"Give local tips for traveling in {destination}",
+        backstory="You are a local expert who gives travel tips, safety advice, cultural insights, and local recommendations.",
+        verbose=True,
+        allow_delegation=False
+    )
 
 def create_budget_agent(destination: str):
     """Create the Financial Advisor agent with real cost research tools."""
@@ -314,10 +324,16 @@ def create_budget_agent(destination: str):
         allow_delegation=False
     )
 
-
 # ============================================================================
 # TASK DEFINITIONS
 # ============================================================================
+def create_local_task(local_agent, destination: str):
+    """Define the local expert task."""
+    return Task(
+        description=f"Provide local travel tips for {destination}",
+        agent=local_agent,
+        expected_output="A list of useful local tips for travelers"
+    )
 
 def create_flight_task(flight_agent, destination: str, trip_dates: str, departure_city: str):
     """Define the flight research task using real data."""
@@ -454,16 +470,19 @@ def main(destination: str = "Iceland", trip_duration: str = "5 days",
     print()
 
     # Create agents with destination parameters
-    print("[1/4] Creating Flight Specialist Agent (researches real flights)...")
+    print("[1/5] Creating Flight Specialist Agent (researches real flights)...")
     flight_agent = create_flight_agent(destination, trip_dates)
 
-    print("[2/4] Creating Accommodation Specialist Agent (researches real hotels)...")
+    print("[2/5] Creating Accommodation Specialist Agent (researches real hotels)...")
     hotel_agent = create_hotel_agent(destination, trip_dates)
 
-    print("[3/4] Creating Travel Planner Agent (researches real attractions)...")
+    print("[3/5] Creating Travel Planner Agent (researches real attractions)...") 
     itinerary_agent = create_itinerary_agent(destination, trip_duration)
-
-    print("[4/4] Creating Financial Advisor Agent (analyzes real costs)...")
+    
+    print("[4/5] Creating Local Expert Agent (provides local tips)...")
+    local_agent = create_local_agent(destination)
+    
+    print("[5/5] Creating Financial Advisor Agent (analyzes real costs)...")
     budget_agent = create_budget_agent(destination)
 
     print("\n✅ All agents created successfully!")
@@ -474,6 +493,7 @@ def main(destination: str = "Iceland", trip_duration: str = "5 days",
     flight_task = create_flight_task(flight_agent, destination, trip_dates, departure_city)
     hotel_task = create_hotel_task(hotel_agent, destination, trip_dates)
     itinerary_task = create_itinerary_task(itinerary_agent, destination, trip_duration, trip_dates)
+    local_task = create_local_task(local_agent, destination)
     budget_task = create_budget_task(budget_agent, destination, trip_duration)
 
     print("Tasks created successfully!")
@@ -481,12 +501,12 @@ def main(destination: str = "Iceland", trip_duration: str = "5 days",
 
     # Create the crew with sequential task execution
     print("Forming the Travel Planning Crew...")
-    print("Task Sequence: FlightAgent → HotelAgent → ItineraryAgent → BudgetAgent")
+    print("Task Sequence: FlightAgent → HotelAgent → ItineraryAgent → LocalExpertAgent → BudgetAgent")
     print()
 
     crew = Crew(
-        agents=[flight_agent, hotel_agent, itinerary_agent, budget_agent],
-        tasks=[flight_task, hotel_task, itinerary_task, budget_task],
+        agents=[flight_agent, hotel_agent, itinerary_agent, local_agent, budget_agent],
+        tasks=[flight_task, hotel_task, itinerary_task, local_task, budget_task],
         verbose=True,
         process="sequential"  # Sequential task execution
     )
